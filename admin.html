@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Ninho Consultoria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #13151A;
+    color: #EDEEF0;
+    font-family: 'IBM Plex Sans', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* Login */
+  #loginScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+    background: #1B1E26;
+    border: 1px solid #2C303A;
+    border-radius: 14px;
+    padding: 36px 32px;
+  }
+  .login-brand {
+    font-family: 'Fraunces', serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .login-brand span { color: #3DDC97; }
+  .login-sub { color: #9499A6; font-size: 0.9rem; margin-bottom: 28px; }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 0.82rem; color: #9499A6; margin-bottom: 7px; font-weight: 500; }
+  .field input {
+    width: 100%;
+    background: #13151A;
+    border: 1px solid #2C303A;
+    border-radius: 10px;
+    padding: 12px 13px;
+    color: #EDEEF0;
+    font-size: 0.95rem;
+    font-family: inherit;
+  }
+  .field input:focus { outline: none; border-color: #5B8DEF; }
+
+  button {
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 20px;
+    cursor: pointer;
+  }
+  .btn-primary { background: #EDEEF0; color: #13151A; }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-full { width: 100%; margin-top: 6px; }
+  .btn-ghost { background: transparent; color: #9499A6; padding: 8px 4px; }
+  .btn-ghost:hover { color: #EDEEF0; }
+
+  .error-msg { color: #D9534F; font-size: 0.85rem; margin-top: 14px; display: none; }
+  .success-msg { color: #3DDC97; font-size: 0.85rem; margin-top: 14px; display: none; }
+
+  /* Dashboard */
+  #dashboard { display: none; }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid #2C303A;
+    position: sticky;
+    top: 0;
+    background: #13151A;
+    z-index: 10;
+  }
+  .topbar .brand { font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 600; }
+  .topbar .brand span { color: #3DDC97; }
+
+  .dash-body { padding: 28px 32px 60px; max-width: 1100px; margin: 0 auto; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+  .tab-btn {
+    background: transparent;
+    color: #9499A6;
+    border: 1px solid #2C303A;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+  }
+  .tab-btn.active { background: #1B1E26; color: #EDEEF0; border-color: #5B8DEF; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: #1B1E26;
+    border: 1px solid #2C303A;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .card h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 560px) { .row2 { grid-template-columns: 1fr; } }
+
+  .table-wrap {
+    background: #1B1E26;
+    border: 1px solid #2C303A;
+    border-radius: 14px;
+    overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  thead th {
+    text-align: left;
+    font-size: 0.72rem;
+    color: #9499A6;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 14px 18px;
+    border-bottom: 1px solid #2C303A;
+    white-space: nowrap;
+  }
+  tbody td { padding: 14px 18px; font-size: 0.88rem; border-bottom: 1px solid #2C303A; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #1F232C; }
+
+  .link-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #13151A;
+    border: 1px solid #2C303A;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: #9499A6;
+  }
+  .link-box input { flex: 1; background: none; border: none; color: inherit; font-family: inherit; font-size: inherit; }
+  .link-box input:focus { outline: none; }
+  .btn-copy { background: #2C303A; color: #EDEEF0; padding: 6px 12px; font-size: 0.78rem; }
+  .btn-copy:hover { background: #3A3F4C; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .badge.solida { background: rgba(61,220,151,0.12); color: #3DDC97; }
+  .badge.solida::before { background: #3DDC97; }
+  .badge.desenvolvimento { background: rgba(91,141,239,0.12); color: #5B8DEF; }
+  .badge.desenvolvimento::before { background: #5B8DEF; }
+  .badge.incendio { background: rgba(232,149,74,0.12); color: #E8954A; }
+  .badge.incendio::before { background: #E8954A; }
+  .badge.critica { background: rgba(217,83,79,0.12); color: #D9534F; }
+  .badge.critica::before { background: #D9534F; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: #9499A6; font-size: 0.9rem; }
+  .score-mono { font-family: 'IBM Plex Mono', monospace; color: #9499A6; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">NINHO <span>·</span> Admin</div>
+    <div class="login-sub">Acesso restrito ao painel.</div>
+    <div class="field">
+      <label for="loginEmail">E-mail</label>
+      <input type="email" id="loginEmail" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="loginPassword">Senha</label>
+      <input type="password" id="loginPassword" autocomplete="current-password">
+    </div>
+    <button class="btn-primary btn-full" id="loginBtn" onclick="doLogin()">Entrar</button>
+    <div class="error-msg" id="loginError">E-mail ou senha incorretos.</div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="topbar">
+    <div class="brand">NINHO <span>·</span> Admin</div>
+    <button class="btn-ghost" onclick="doLogout()">Sair</button>
+  </div>
+
+  <div class="dash-body">
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabBtnPessoas" onclick="switchTab('pessoas')">Pessoas</button>
+      <button class="tab-btn" id="tabBtnRespostas" onclick="switchTab('respostas')">Respostas</button>
+    </div>
+
+    <div class="panel active" id="panelPessoas">
+
+      <div class="card">
+        <h2>Cadastrar nova pessoa</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="novoNome">Nome</label>
+            <input type="text" id="novoNome" placeholder="Nome completo">
+          </div>
+          <div class="field">
+            <label for="novoEmail">E-mail</label>
+            <input type="email" id="novoEmail" placeholder="email@exemplo.com">
+          </div>
+        </div>
+        <button class="btn-primary" onclick="criarPessoa()" id="criarBtn">Cadastrar e gerar link</button>
+        <div class="error-msg" id="criarError">Preencha nome e e-mail.</div>
+        <div class="success-msg" id="criarSucesso">Pessoa cadastrada! O link aparece na lista abaixo.</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Link do diagnostico</th>
+              <th>Respostas</th>
+            </tr>
+          </thead>
+          <tbody id="pessoasBody">
+            <tr><td colspan="4" class="empty-state">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel" id="panelRespostas">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Pessoa</th>
+              <th>E-mail</th>
+              <th>Pontuacao</th>
+              <th>Perfil</th>
+            </tr>
+          </thead>
+          <tbody id="respostasBody">
+            <tr><td colspan="5" class="empty-state">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var SUPA_URL = "https://ofqdpwjjldcvsszjamxb.supabase.co";
+var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcWRwd2pqbGRjdnNzemphbXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NjE0NzcsImV4cCI6MjA5ODAzNzQ3N30.c2c32yqCtZlMQ64z1kdFz2AMUe3bP33k60MxS8zu0X0";
+
+var sbClient = null;
+try {
+  sbClient = supabase.createClient(SUPA_URL, SUPA_KEY);
+} catch (errInit) {
+  console.log("Falha ao iniciar supabase: " + errInit.message);
+}
+
+var allPessoas = [];
+var allRespostas = [];
+
+function doLogin() {
+  var email = document.getElementById("loginEmail").value.trim();
+  var pass = document.getElementById("loginPassword").value;
+  var errBox = document.getElementById("loginError");
+  var btn = document.getElementById("loginBtn");
+  errBox.style.display = "none";
+
+  if (!sbClient) {
+    errBox.textContent = "Nao foi possivel conectar ao servidor.";
+    errBox.style.display = "block";
+    return;
+  }
+  if (!email || !pass) {
+    errBox.textContent = "Preencha e-mail e senha.";
+    errBox.style.display = "block";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Entrando...";
+
+  sbClient.auth.signInWithPassword({ email: email, password: pass }).then(function(result) {
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+    if (result.error) {
+      errBox.textContent = "E-mail ou senha incorretos.";
+      errBox.style.display = "block";
+      return;
+    }
+    showDashboard();
+  });
+}
+
+function doLogout() {
+  sbClient.auth.signOut().then(function() {
+    document.getElementById("dashboard").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+  });
+}
+
+function checkSession() {
+  if (!sbClient) { return; }
+  sbClient.auth.getSession().then(function(result) {
+    if (result.data && result.data.session) {
+      showDashboard();
+    }
+  });
+}
+
+function showDashboard() {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  loadPessoas();
+  loadRespostas();
+}
+
+function switchTab(tab) {
+  document.getElementById("panelPessoas").classList.remove("active");
+  document.getElementById("panelRespostas").classList.remove("active");
+  document.getElementById("tabBtnPessoas").classList.remove("active");
+  document.getElementById("tabBtnRespostas").classList.remove("active");
+  document.getElementById("panel" + capitalize(tab)).classList.add("active");
+  document.getElementById("tabBtn" + capitalize(tab)).classList.add("active");
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function buildLinkForToken(token) {
+  var base = window.location.href.replace("admin.html", "questionario.html");
+  return base + "?token=" + token;
+}
+
+function criarPessoa() {
+  var nome = document.getElementById("novoNome").value.trim();
+  var email = document.getElementById("novoEmail").value.trim();
+  var errBox = document.getElementById("criarError");
+  var okBox = document.getElementById("criarSucesso");
+  var btn = document.getElementById("criarBtn");
+  errBox.style.display = "none";
+  okBox.style.display = "none";
+
+  if (!nome || !email) {
+    errBox.textContent = "Preencha nome e e-mail.";
+    errBox.style.display = "block";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Cadastrando...";
+
+  sbClient.from("pessoas").insert({ nome: nome, email: email }).select().then(function(result) {
+    btn.disabled = false;
+    btn.textContent = "Cadastrar e gerar link";
+    if (result.error) {
+      errBox.textContent = "Erro ao cadastrar: " + result.error.message;
+      errBox.style.display = "block";
+      return;
+    }
+    document.getElementById("novoNome").value = "";
+    document.getElementById("novoEmail").value = "";
+    okBox.style.display = "block";
+    loadPessoas();
+  });
+}
+
+function loadPessoas() {
+  sbClient.from("pessoas").select("*").order("criado_em", { ascending: false }).then(function(result) {
+    if (result.error) {
+      document.getElementById("pessoasBody").innerHTML = '<tr><td colspan="4" class="empty-state">Erro ao carregar: ' + escapeHtml(result.error.message) + '</td></tr>';
+      return;
+    }
+    allPessoas = result.data || [];
+    renderPessoas();
+  });
+}
+
+function renderPessoas() {
+  var body = document.getElementById("pessoasBody");
+  if (allPessoas.length === 0) {
+    body.innerHTML = '<tr><td colspan="4" class="empty-state">Nenhuma pessoa cadastrada ainda.</td></tr>';
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < allPessoas.length; i++) {
+    var p = allPessoas[i];
+    var link = buildLinkForToken(p.token);
+    var countRespostas = countRespostasForPessoa(p.id);
+    html += "<tr>";
+    html += "<td>" + escapeHtml(p.nome) + "</td>";
+    html += "<td>" + escapeHtml(p.email) + "</td>";
+    html += '<td><div class="link-box"><input type="text" readonly value="' + escapeHtml(link) + '" id="link-' + p.id + '"><button class="btn-copy" onclick="copyLink(\'' + p.id + '\')">Copiar</button></div></td>';
+    html += '<td class="score-mono">' + countRespostas + "</td>";
+    html += "</tr>";
+  }
+  body.innerHTML = html;
+}
+
+function countRespostasForPessoa(pessoaId) {
+  var count = 0;
+  for (var i = 0; i < allRespostas.length; i++) {
+    if (allRespostas[i].pessoa_id === pessoaId) { count++; }
+  }
+  return count;
+}
+
+function copyLink(pessoaId) {
+  var input = document.getElementById("link-" + pessoaId);
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(function() {
+    var btn = input.nextElementSibling;
+    var original = btn.textContent;
+    btn.textContent = "Copiado!";
+    setTimeout(function() { btn.textContent = original; }, 1500);
+  }).catch(function() {
+    document.execCommand("copy");
+  });
+}
+
+function loadRespostas() {
+  sbClient.from("respostas").select("*").order("criado_em", { ascending: false }).then(function(result) {
+    if (result.error) {
+      document.getElementById("respostasBody").innerHTML = '<tr><td colspan="5" class="empty-state">Erro ao carregar: ' + escapeHtml(result.error.message) + '</td></tr>';
+      return;
+    }
+    allRespostas = result.data || [];
+    renderRespostas();
+    renderPessoas();
+  });
+}
+
+function findPessoaById(id) {
+  for (var i = 0; i < allPessoas.length; i++) {
+    if (allPessoas[i].id === id) { return allPessoas[i]; }
+  }
+  return null;
+}
+
+function perfilClass(perfil) {
+  if (perfil === "Gestao Financeira Solida") { return "solida"; }
+  if (perfil === "Em Desenvolvimento") { return "desenvolvimento"; }
+  if (perfil === "Apagando Incendio") { return "incendio"; }
+  return "critica";
+}
+
+function formatDate(iso) {
+  var d = new Date(iso);
+  var datePart = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  var timePart = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return datePart + " " + timePart;
+}
+
+function renderRespostas() {
+  var body = document.getElementById("respostasBody");
+  if (allRespostas.length === 0) {
+    body.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhuma resposta recebida ainda.</td></tr>';
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < allRespostas.length; i++) {
+    var r = allRespostas[i];
+    var pessoa = findPessoaById(r.pessoa_id);
+    var nome = pessoa ? pessoa.nome : "(pessoa removida)";
+    var email = pessoa ? pessoa.email : "-";
+    html += "<tr>";
+    html += "<td>" + formatDate(r.criado_em) + "</td>";
+    html += "<td>" + escapeHtml(nome) + "</td>";
+    html += "<td>" + escapeHtml(email) + "</td>";
+    html += '<td class="score-mono">' + r.pontuacao + "/28</td>";
+    html += '<td><span class="badge ' + perfilClass(r.perfil) + '">' + escapeHtml(r.perfil) + "</span></td>";
+    html += "</tr>";
+  }
+  body.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  var div = document.createElement("div");
+  div.textContent = str === null || str === undefined ? "" : str;
+  return div.innerHTML;
+}
+
+document.getElementById("loginPassword").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") { doLogin(); }
+});
+
+checkSession();
+</script>
+</body>
+</html>

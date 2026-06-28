@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnostico Financeiro - Ninho Consultoria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #13151A;
+    color: #EDEEF0;
+    font-family: 'IBM Plex Sans', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding-top: 30px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+  }
+
+  .brand {
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .brand span { color: #3DDC97; }
+
+  .step-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: #9499A6;
+    letter-spacing: 0.04em;
+  }
+
+  .progress-track {
+    height: 3px;
+    width: 100%;
+    background: #2C303A;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #5B8DEF, #3DDC97);
+    transition: width 0.4s ease;
+    border-radius: 3px;
+  }
+
+  .screen {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+  }
+  .screen.active {
+    display: flex;
+    animation: rise 0.4s ease;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: #5B8DEF;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+
+  p.sub {
+    color: #9499A6;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    max-width: 480px;
+  }
+
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    background: #1B1E26;
+    border: 1px solid #2C303A;
+    color: #EDEEF0;
+    padding: 15px 16px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.96rem;
+    font-family: inherit;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .opt:hover { border-color: #3A3F4C; }
+  .opt .gauge {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 6px;
+    background: #2C303A;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .opt.sel {
+    border-color: #5B8DEF;
+    background: #1E2330;
+  }
+  .opt.sel[data-score="4"] .gauge { background: #3DDC97; box-shadow: 0 0 0 4px rgba(61,220,151,0.15); }
+  .opt.sel[data-score="3"] .gauge { background: #5B8DEF; box-shadow: 0 0 0 4px rgba(91,141,239,0.15); }
+  .opt.sel[data-score="2"] .gauge { background: #E8954A; box-shadow: 0 0 0 4px rgba(232,149,74,0.15); }
+  .opt.sel[data-score="1"] .gauge { background: #D9534F; box-shadow: 0 0 0 4px rgba(217,83,79,0.15); }
+
+  button.nav {
+    background: #EDEEF0;
+    color: #13151A;
+    border: none;
+    padding: 14px 26px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: opacity 0.2s;
+  }
+  button.nav:hover:not(:disabled) { opacity: 0.88; }
+  button.nav:disabled { opacity: 0.35; cursor: not-allowed; }
+  button.nav.ghost {
+    background: transparent;
+    color: #9499A6;
+  }
+  button.nav.ghost:hover { color: #EDEEF0; opacity: 1; }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    gap: 12px;
+  }
+
+  #err {
+    color: #D9534F;
+    font-size: 0.85rem;
+    margin-top: 14px;
+    display: none;
+  }
+
+  .final {
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    flex: 1;
+  }
+  .final-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: rgba(61,220,151,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+  }
+
+  .foot {
+    text-align: center;
+    color: #9499A6;
+    font-size: 0.75rem;
+    margin-top: 30px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar" id="topbar">
+    <div class="brand">NINHO <span>·</span> Diagnostico</div>
+    <div class="step-label" id="stepLabel">Inicio</div>
+  </div>
+  <div class="progress-track" id="progressTrack"><div class="progress-fill" id="progressFill"></div></div>
+
+  <section class="screen final active" id="screen-loading">
+    <p class="sub">Carregando...</p>
+  </section>
+
+  <section class="screen final" id="screen-invalido">
+    <div class="final-icon" style="background: rgba(217,83,79,0.12);">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 8V13M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#D9534F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1>Link invalido ou expirado.</h1>
+    <p class="sub">Este link de diagnostico nao foi encontrado. Verifique se o link foi copiado corretamente ou solicite um novo.</p>
+  </section>
+
+  <section class="screen" id="screen-intro">
+    <div class="eyebrow">Diagnostico de maturidade financeira</div>
+    <h1 id="introTitle">Voce sabe exatamente para onde vai o dinheiro do seu negocio?</h1>
+    <p class="sub">7 perguntas, menos de 3 minutos. No final, identificamos seu estagio atual de gestao financeira.</p>
+    <button class="nav" onclick="startQuiz()">Iniciar diagnostico</button>
+  </section>
+
+  <div id="quiz-questions"></div>
+
+  <section class="screen final" id="screen-done">
+    <div class="final-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M4 12.5L9 17.5L20 6.5" stroke="#3DDC97" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1>Diagnostico recebido.</h1>
+    <p class="sub">Em breve entraremos em contato com os detalhes do seu perfil financeiro.</p>
+  </section>
+
+  <div class="foot">NINHO CONSULTORIA</div>
+</div>
+
+<script>
+var SUPA_URL = "https://ofqdpwjjldcvsszjamxb.supabase.co";
+var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcWRwd2pqbGRjdnNzemphbXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NjE0NzcsImV4cCI6MjA5ODAzNzQ3N30.c2c32yqCtZlMQ64z1kdFz2AMUe3bP33k60MxS8zu0X0";
+
+var sbClient = null;
+try {
+  sbClient = supabase.createClient(SUPA_URL, SUPA_KEY);
+} catch (errInit) {
+  console.log("Falha ao iniciar supabase: " + errInit.message);
+}
+
+var currentPerson = null;
+
+var QUIZ_DATA = [
+  ["Voce sabe quanto sobra no seu negocio ao final do mes?", ["Sim, acompanho com relatorios", "Tenho uma nocao geral", "Raramente sei ao certo", "Nao acompanho"]],
+  ["Voce separa as financas pessoais das financas da empresa?", ["Sim, totalmente separadas", "Em grande parte sim", "Misturo bastante", "Nao separo"]],
+  ["Com que antecedencia voce preve o fluxo de caixa?", ["3 a 6 meses", "Proximos 30 dias", "Soh a semana seguinte", "Nenhuma antecedencia"]],
+  ["Como voce precifica seus produtos ou servicos?", ["Com base em custos e margem detalhados", "Calculo custos e adiciono margem", "Olho o concorrente", "Pelo feeling"]],
+  ["Voce tem reserva de capital de giro?", ["Mais de 3 meses", "Entre 1 e 3 meses", "Menos de 30 dias", "Nao tenho reserva"]],
+  ["Qual sua relacao com credito e financiamento?", ["Uso de forma estrategica", "Uso sem muito criterio", "Tenho dividas que pesam", "Evito a qualquer custo"]],
+  ["Voce conhece os indicadores financeiros do seu negocio?", ["Sim, acompanho regularmente", "Conheco alguns", "Ouvi falar mas nao sei calcular", "Nao uso indicadores"]]
+];
+
+var answers = [];
+for (var i = 0; i < QUIZ_DATA.length; i++) { answers.push(null); }
+
+function buildQuestions() {
+  var container = document.getElementById("quiz-questions");
+  var html = "";
+  for (var qi = 0; qi < QUIZ_DATA.length; qi++) {
+    var qTitle = QUIZ_DATA[qi][0];
+    var qOptions = QUIZ_DATA[qi][1];
+    html += '<section class="screen" id="screen-q' + qi + '">';
+    html += '<div class="eyebrow">Pergunta ' + (qi + 1) + ' de ' + QUIZ_DATA.length + '</div>';
+    html += '<h1>' + qTitle + '</h1>';
+    for (var oi = 0; oi < qOptions.length; oi++) {
+      var score = 4 - oi;
+      html += '<button type="button" class="opt" data-score="' + score + '" onclick="selectAnswer(' + qi + ',' + score + ',this)">';
+      html += '<span class="gauge"></span><span>' + qOptions[oi] + '</span>';
+      html += '</button>';
+    }
+    html += '<div class="row">';
+    html += '<button type="button" class="nav ghost" onclick="goToScreen(\'q' + (qi - 1) + '\',' + qi + ')">Voltar</button>';
+    if (qi === QUIZ_DATA.length - 1) {
+      html += '<button type="button" class="nav" id="btn-next-q' + qi + '" disabled onclick="finishQuiz()">Concluir diagnostico</button>';
+    } else {
+      html += '<button type="button" class="nav" id="btn-next-q' + qi + '" disabled onclick="goToScreen(\'q' + (qi + 1) + '\',' + (qi + 2) + ')">Continuar</button>';
+    }
+    html += '</div>';
+    if (qi === QUIZ_DATA.length - 1) {
+      html += '<div id="err">Nao foi possivel enviar. Tente novamente.</div>';
+    }
+    html += '</section>';
+  }
+  container.innerHTML = html;
+}
+
+function selectAnswer(questionIndex, score, btnEl) {
+  var parent = btnEl.parentElement;
+  var siblings = parent.querySelectorAll(".opt");
+  for (var i = 0; i < siblings.length; i++) { siblings[i].classList.remove("sel"); }
+  btnEl.classList.add("sel");
+  answers[questionIndex] = score;
+  document.getElementById("btn-next-q" + questionIndex).disabled = false;
+}
+
+function updateProgress(stepNumber) {
+  var fill = document.getElementById("progressFill");
+  var label = document.getElementById("stepLabel");
+  if (stepNumber === 0) {
+    fill.style.width = "0%";
+    label.textContent = "Inicio";
+  } else if (stepNumber >= 1 && stepNumber <= QUIZ_DATA.length) {
+    fill.style.width = ((stepNumber / QUIZ_DATA.length) * 100) + "%";
+    label.textContent = "Pergunta " + stepNumber + " de " + QUIZ_DATA.length;
+  } else {
+    fill.style.width = "100%";
+    label.textContent = "Concluido";
+  }
+}
+
+function goToScreen(screenId, stepNumber) {
+  if (screenId === "q-1") { screenId = "intro"; stepNumber = 0; }
+  var all = document.querySelectorAll(".screen");
+  for (var i = 0; i < all.length; i++) { all[i].classList.remove("active"); }
+  var target = document.getElementById("screen-" + screenId);
+  if (target) { target.classList.add("active"); }
+  if (typeof stepNumber === "number") { updateProgress(stepNumber); }
+  window.scrollTo(0, 0);
+}
+
+function startQuiz() {
+  goToScreen("q0", 1);
+}
+
+function getProfile(score) {
+  if (score >= 22) { return "Gestao Financeira Solida"; }
+  if (score >= 15) { return "Em Desenvolvimento"; }
+  if (score >= 10) { return "Apagando Incendio"; }
+  return "Zona Critica";
+}
+
+function finishQuiz() {
+  var errBox = document.getElementById("err");
+  errBox.style.display = "none";
+
+  var hasNull = false;
+  for (var i = 0; i < answers.length; i++) { if (answers[i] === null) { hasNull = true; } }
+  if (hasNull) {
+    errBox.textContent = "Responda todas as perguntas antes de concluir.";
+    errBox.style.display = "block";
+    return;
+  }
+
+  if (!sbClient) {
+    errBox.textContent = "Nao foi possivel conectar ao servidor. Recarregue a pagina.";
+    errBox.style.display = "block";
+    return;
+  }
+
+  var total = 0;
+  for (var j = 0; j < answers.length; j++) { total += answers[j]; }
+  var profile = getProfile(total);
+
+  var payload = {
+    pessoa_id: currentPerson.id,
+    p1: answers[0], p2: answers[1], p3: answers[2], p4: answers[3],
+    p5: answers[4], p6: answers[5], p7: answers[6],
+    pontuacao: total, perfil: profile
+  };
+
+  sbClient.from("respostas").insert(payload).then(function(result) {
+    if (result.error) {
+      errBox.textContent = "Erro ao enviar: " + result.error.message;
+      errBox.style.display = "block";
+      return;
+    }
+    goToScreen("done", QUIZ_DATA.length + 1);
+  });
+}
+
+function hideTopChrome() {
+  document.getElementById("topbar").style.display = "none";
+  document.getElementById("progressTrack").style.display = "none";
+}
+
+function showTopChrome() {
+  document.getElementById("topbar").style.display = "flex";
+  document.getElementById("progressTrack").style.display = "block";
+}
+
+function getTokenFromUrl() {
+  var params = new URLSearchParams(window.location.search);
+  return params.get("token");
+}
+
+function initFromToken() {
+  hideTopChrome();
+  var token = getTokenFromUrl();
+
+  if (!token) {
+    showInvalid();
+    return;
+  }
+
+  if (!sbClient) {
+    showInvalid();
+    return;
+  }
+
+  sbClient.from("pessoas").select("id,nome,email").eq("token", token).maybeSingle().then(function(result) {
+    if (result.error || !result.data) {
+      showInvalid();
+      return;
+    }
+    currentPerson = result.data;
+    var firstName = currentPerson.nome.split(" ")[0];
+    document.getElementById("introTitle").textContent = "Ola, " + firstName + "! Vamos comecar seu diagnostico financeiro?";
+    showTopChrome();
+    buildQuestions();
+    goToScreen("intro", 0);
+  });
+}
+
+function showInvalid() {
+  var all = document.querySelectorAll(".screen");
+  for (var i = 0; i < all.length; i++) { all[i].classList.remove("active"); }
+  document.getElementById("screen-invalido").classList.add("active");
+}
+
+initFromToken();
+</script>
+</body>
+</html>
