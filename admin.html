@@ -300,6 +300,19 @@
 
   <div class="dash-body">
 
+    <div class="card" style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div>
+          <div style="font-size:0.72rem;color:#9499A6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Link publico de cadastro</div>
+          <div style="font-size:0.85rem;color:#9499A6;">Compartilhe este link — a pessoa preenche nome, e-mail e celular e ja acessa o diagnostico automaticamente.</div>
+        </div>
+      </div>
+      <div class="link-box">
+        <input type="text" readonly id="linkCadastro" value="">
+        <button class="btn-copy" onclick="copiarLinkCadastro()">Copiar</button>
+      </div>
+    </div>
+
     <div class="tabs">
       <button class="tab-btn active" id="tabBtnPessoas" onclick="switchTab('pessoas')">Pessoas</button>
       <button class="tab-btn" id="tabBtnRespostas" onclick="switchTab('respostas')">Respostas</button>
@@ -445,7 +458,22 @@ function checkSession() {
 function showDashboard() {
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("dashboard").style.display = "block";
+  // preenche o link de cadastro baseado na URL atual
+  var linkCad = window.location.href.replace("admin.html", "cadastro.html");
+  document.getElementById("linkCadastro").value = linkCad;
   loadPessoas();
+}
+
+function copiarLinkCadastro() {
+  var input = document.getElementById("linkCadastro");
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value).then(function() {
+    var btn = input.nextElementSibling;
+    var original = btn.textContent;
+    btn.textContent = "Copiado!";
+    setTimeout(function() { btn.textContent = original; }, 1500);
+  }).catch(function() { document.execCommand("copy"); });
 }
 
 function switchTab(tab) {
