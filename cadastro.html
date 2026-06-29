@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro - Ninho Consultoria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #13151A;
+    color: #EDEEF0;
+    font-family: 'IBM Plex Sans', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 20px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 520px;
+    padding: 60px 0 80px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .brand {
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 48px;
+  }
+  .brand span { color: #3DDC97; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    color: #5B8DEF;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(1.7rem, 5vw, 2.2rem);
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .sub {
+    color: #9499A6;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 36px;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 0.82rem;
+    color: #9499A6;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .field input {
+    width: 100%;
+    background: #1B1E26;
+    border: 1px solid #2C303A;
+    border-radius: 10px;
+    padding: 13px 14px;
+    color: #EDEEF0;
+    font-size: 0.98rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .field input:focus { outline: none; border-color: #5B8DEF; }
+
+  button.btn-primary {
+    width: 100%;
+    background: #EDEEF0;
+    color: #13151A;
+    border: none;
+    border-radius: 10px;
+    padding: 15px;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: opacity 0.2s;
+  }
+  button.btn-primary:hover:not(:disabled) { opacity: 0.88; }
+  button.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .error-msg {
+    color: #D9534F;
+    font-size: 0.85rem;
+    margin-top: 14px;
+    display: none;
+  }
+
+  .redirect-msg {
+    text-align: center;
+    margin-top: 24px;
+    display: none;
+  }
+  .redirect-msg p {
+    color: #9499A6;
+    font-size: 0.9rem;
+    margin-top: 8px;
+  }
+  .redirect-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(61,220,151,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+
+  .foot {
+    text-align: center;
+    color: #9499A6;
+    font-size: 0.75rem;
+    margin-top: 40px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">NINHO <span>·</span> Consultoria</div>
+
+  <div id="formArea">
+    <div class="eyebrow">Diagnostico financeiro gratuito</div>
+    <h1>Descubra o estagio financeiro do seu negocio</h1>
+    <p class="sub">Preencha seus dados abaixo para acessar o diagnostico de maturidade financeira — 7 perguntas, menos de 3 minutos.</p>
+
+    <div class="field">
+      <label for="cadNome">Nome completo</label>
+      <input type="text" id="cadNome" autocomplete="name" placeholder="Seu nome">
+    </div>
+    <div class="field">
+      <label for="cadEmail">E-mail</label>
+      <input type="email" id="cadEmail" autocomplete="email" placeholder="seu@email.com">
+    </div>
+    <div class="field">
+      <label for="cadCelular">Celular (com DDD)</label>
+      <input type="tel" id="cadCelular" autocomplete="tel" placeholder="(00) 00000-0000">
+    </div>
+
+    <button class="btn-primary" id="cadBtn" onclick="fazerCadastro()">Acessar meu diagnostico</button>
+    <div class="error-msg" id="cadError"></div>
+  </div>
+
+  <div class="redirect-msg" id="redirectMsg">
+    <div class="redirect-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M4 12.5L9 17.5L20 6.5" stroke="#3DDC97" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h1 style="font-size:1.5rem;">Tudo certo!</h1>
+    <p>Redirecionando para o seu diagnostico...</p>
+  </div>
+
+  <div class="foot">NINHO CONSULTORIA</div>
+</div>
+
+<script>
+var SUPA_URL = "https://ofqdpwjjldcvsszjamxb.supabase.co";
+var SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mcWRwd2pqbGRjdnNzemphbXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NjE0NzcsImV4cCI6MjA5ODAzNzQ3N30.c2c32yqCtZlMQ64z1kdFz2AMUe3bP33k60MxS8zu0X0";
+
+var sbClient = null;
+try {
+  sbClient = supabase.createClient(SUPA_URL, SUPA_KEY);
+} catch (errInit) {
+  console.log("Falha ao iniciar supabase: " + errInit.message);
+}
+
+function fazerCadastro() {
+  var nome = document.getElementById("cadNome").value.trim();
+  var email = document.getElementById("cadEmail").value.trim();
+  var celular = document.getElementById("cadCelular").value.trim();
+  var errBox = document.getElementById("cadError");
+  var btn = document.getElementById("cadBtn");
+  errBox.style.display = "none";
+
+  if (!nome) {
+    errBox.textContent = "Preencha seu nome.";
+    errBox.style.display = "block";
+    return;
+  }
+  if (!email || email.indexOf("@") === -1) {
+    errBox.textContent = "Preencha um e-mail valido.";
+    errBox.style.display = "block";
+    return;
+  }
+  if (!celular) {
+    errBox.textContent = "Preencha seu celular.";
+    errBox.style.display = "block";
+    return;
+  }
+  if (!sbClient) {
+    errBox.textContent = "Nao foi possivel conectar ao servidor. Recarregue a pagina.";
+    errBox.style.display = "block";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Cadastrando...";
+
+  sbClient.from("pessoas").insert({
+    nome: nome,
+    email: email,
+    celular: celular
+  }).select("token").then(function(result) {
+    if (result.error) {
+      btn.disabled = false;
+      btn.textContent = "Acessar meu diagnostico";
+      errBox.textContent = "Erro ao cadastrar: " + result.error.message;
+      errBox.style.display = "block";
+      return;
+    }
+
+    var token = result.data[0].token;
+
+    // Mostra mensagem de sucesso brevemente antes de redirecionar
+    document.getElementById("formArea").style.display = "none";
+    document.getElementById("redirectMsg").style.display = "block";
+
+    setTimeout(function() {
+      var base = window.location.href.replace("cadastro.html", "questionario.html");
+      window.location.href = base + "?token=" + token;
+    }, 1500);
+  });
+}
+
+// Permite enviar com Enter
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    var btn = document.getElementById("cadBtn");
+    if (btn && !btn.disabled) { fazerCadastro(); }
+  }
+});
+</script>
+</body>
+</html>
