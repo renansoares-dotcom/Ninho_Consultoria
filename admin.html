@@ -185,6 +185,55 @@
 
   .empty-state { text-align: center; padding: 40px 20px; color: #9499A6; font-size: 0.9rem; }
   .score-mono { font-family: 'IBM Plex Mono', monospace; color: #9499A6; }
+  tbody tr.clickable { cursor: pointer; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal {
+    background: #1B1E26;
+    border: 1px solid #2C303A;
+    border-radius: 14px;
+    max-width: 540px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 28px;
+  }
+  .modal-header { margin-bottom: 20px; }
+  .modal-header h3 { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 600; margin-bottom: 4px; }
+  .modal-header .modal-sub { color: #9499A6; font-size: 0.82rem; }
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .modal-item .k { font-size: 0.72rem; color: #9499A6; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+  .modal-item .v { font-size: 0.92rem; }
+  .answers-list { margin-bottom: 22px; }
+  .answer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #2C303A;
+    font-size: 0.84rem;
+  }
+  .answer-row:last-child { border-bottom: none; }
+  .answer-row .q-txt { color: #9499A6; flex: 1; }
+  .answer-row .q-score { font-family: 'IBM Plex Mono', monospace; flex-shrink: 0; }
+  .btn-modal-close { background: #13151A; border: 1px solid #2C303A; color: #EDEEF0; width: 100%; padding: 12px; }
 </style>
 </head>
 <body>
@@ -275,6 +324,11 @@
     </div>
 
   </div>
+</div>
+
+<!-- Modal de detalhe da resposta -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="fecharModalBackdrop(event)">
+  <div class="modal" id="modalConteudo"></div>
 </div>
 
 <script>
@@ -381,18 +435,29 @@ function criarPessoa() {
   btn.disabled = true;
   btn.textContent = "Cadastrando...";
 
-  sbClient.from("pessoas").insert({ nome: nome, email: email }).select().then(function(result) {
-    btn.disabled = false;
-    btn.textContent = "Cadastrar e gerar link";
-    if (result.error) {
-      errBox.textContent = "Erro ao cadastrar: " + result.error.message;
+  // Garante que a sessao esta ativa antes de inserir
+  sbClient.auth.getSession().then(function(sessionResult) {
+    if (!sessionResult.data || !sessionResult.data.session) {
+      btn.disabled = false;
+      btn.textContent = "Cadastrar e gerar link";
+      errBox.textContent = "Sessao expirada. Faca login novamente.";
       errBox.style.display = "block";
       return;
     }
-    document.getElementById("novoNome").value = "";
-    document.getElementById("novoEmail").value = "";
-    okBox.style.display = "block";
-    loadPessoas();
+
+    sbClient.from("pessoas").insert({ nome: nome, email: email }).select().then(function(result) {
+      btn.disabled = false;
+      btn.textContent = "Cadastrar e gerar link";
+      if (result.error) {
+        errBox.textContent = "Erro ao cadastrar: " + result.error.message;
+        errBox.style.display = "block";
+        return;
+      }
+      document.getElementById("novoNome").value = "";
+      document.getElementById("novoEmail").value = "";
+      okBox.style.display = "block";
+      loadPessoas();
+    });
   });
 }
 
@@ -495,7 +560,7 @@ function renderRespostas() {
     var pessoa = findPessoaById(r.pessoa_id);
     var nome = pessoa ? pessoa.nome : "(pessoa removida)";
     var email = pessoa ? pessoa.email : "-";
-    html += "<tr>";
+    html += '<tr class="clickable" onclick="abrirModal(\'' + r.id + '\')">';
     html += "<td>" + formatDate(r.criado_em) + "</td>";
     html += "<td>" + escapeHtml(nome) + "</td>";
     html += "<td>" + escapeHtml(email) + "</td>";
@@ -504,6 +569,75 @@ function renderRespostas() {
     html += "</tr>";
   }
   body.innerHTML = html;
+}
+
+var PERGUNTAS = [
+  "Voce sabe quanto sobra no seu negocio ao final do mes?",
+  "Voce separa as financas pessoais das financas da empresa?",
+  "Com que antecedencia voce preve o fluxo de caixa?",
+  "Como voce precifica seus produtos ou servicos?",
+  "Voce tem reserva de capital de giro?",
+  "Qual sua relacao com credito e financiamento?",
+  "Voce conhece os indicadores financeiros do seu negocio?"
+];
+
+var OPCOES = [
+  ["Sim, acompanho com relatorios", "Tenho uma nocao geral", "Raramente sei ao certo", "Nao acompanho"],
+  ["Sim, totalmente separadas", "Em grande parte sim", "Misturo bastante", "Nao separo"],
+  ["3 a 6 meses", "Proximos 30 dias", "Soh a semana seguinte", "Nenhuma antecedencia"],
+  ["Com base em custos e margem detalhados", "Calculo custos e adiciono margem", "Olho o concorrente", "Pelo feeling"],
+  ["Mais de 3 meses", "Entre 1 e 3 meses", "Menos de 30 dias", "Nao tenho reserva"],
+  ["Uso de forma estrategica", "Uso sem muito criterio", "Tenho dividas que pesam", "Evito a qualquer custo"],
+  ["Sim, acompanho regularmente", "Conheco alguns", "Ouvi falar mas nao sei calcular", "Nao uso indicadores"]
+];
+
+function getOpcaoTexto(perguntaIndex, score) {
+  var opcaoIndex = 4 - score; // score 4 = opcao 0, score 1 = opcao 3
+  return OPCOES[perguntaIndex][opcaoIndex];
+}
+
+function abrirModal(respostaId) {
+  var r = null;
+  for (var i = 0; i < allRespostas.length; i++) {
+    if (allRespostas[i].id === respostaId) { r = allRespostas[i]; break; }
+  }
+  if (!r) { return; }
+
+  var pessoa = findPessoaById(r.pessoa_id);
+  var nome = pessoa ? pessoa.nome : "(pessoa removida)";
+  var email = pessoa ? pessoa.email : "-";
+
+  var scores = [r.p1, r.p2, r.p3, r.p4, r.p5, r.p6, r.p7];
+  var answersHtml = "";
+  for (var j = 0; j < PERGUNTAS.length; j++) {
+    var scoreColor = scores[j] === 4 ? "#3DDC97" : scores[j] === 3 ? "#5B8DEF" : scores[j] === 2 ? "#E8954A" : "#D9534F";
+    answersHtml += '<div class="answer-row">';
+    answersHtml += '<span class="q-txt">' + PERGUNTAS[j] + '</span>';
+    answersHtml += '<span class="q-score" style="color:' + scoreColor + '">' + scores[j] + '/4</span>';
+    answersHtml += '</div>';
+  }
+
+  document.getElementById("modalConteudo").innerHTML =
+    '<div class="modal-header">' +
+      '<h3>' + escapeHtml(nome) + '</h3>' +
+      '<div class="modal-sub">' + formatDate(r.criado_em) + ' &nbsp;·&nbsp; <span class="badge ' + perfilClass(r.perfil) + '">' + escapeHtml(r.perfil) + '</span></div>' +
+    '</div>' +
+    '<div class="modal-grid">' +
+      '<div class="modal-item"><div class="k">E-mail</div><div class="v">' + escapeHtml(email) + '</div></div>' +
+      '<div class="modal-item"><div class="k">Pontuacao total</div><div class="v score-mono">' + r.pontuacao + '/28</div></div>' +
+    '</div>' +
+    '<div class="answers-list">' + answersHtml + '</div>' +
+    '<button class="btn-modal-close" onclick="fecharModal()">Fechar</button>';
+
+  document.getElementById("modalBackdrop").classList.add("active");
+}
+
+function fecharModal() {
+  document.getElementById("modalBackdrop").classList.remove("active");
+}
+
+function fecharModalBackdrop(e) {
+  if (e.target.id === "modalBackdrop") { fecharModal(); }
 }
 
 function escapeHtml(str) {
