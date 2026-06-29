@@ -187,6 +187,34 @@
   .score-mono { font-family: 'IBM Plex Mono', monospace; color: #9499A6; }
   tbody tr.clickable { cursor: pointer; }
 
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .toolbar input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+    background: #1B1E26;
+    border: 1px solid #2C303A;
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #EDEEF0;
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+  .toolbar input[type="text"]:focus { outline: none; border-color: #5B8DEF; }
+  .toolbar select {
+    background: #1B1E26;
+    border: 1px solid #2C303A;
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: #EDEEF0;
+    font-size: 0.88rem;
+    font-family: inherit;
+  }
+
   /* Modal */
   .modal-backdrop {
     position: fixed;
@@ -305,6 +333,16 @@
     </div>
 
     <div class="panel" id="panelRespostas">
+      <div class="toolbar">
+        <input type="text" id="filtroTexto" placeholder="Filtrar por nome ou e-mail..." oninput="filtrarRespostas()">
+        <select id="filtroPerfil" onchange="filtrarRespostas()">
+          <option value="">Todos os perfis</option>
+          <option value="Gestao Financeira Solida">Gestao Financeira Solida</option>
+          <option value="Em Desenvolvimento">Em Desenvolvimento</option>
+          <option value="Apagando Incendio">Apagando Incendio</option>
+          <option value="Zona Critica">Zona Critica</option>
+        </select>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -548,15 +586,32 @@ function formatDate(iso) {
   return datePart + " " + timePart;
 }
 
-function renderRespostas() {
+function filtrarRespostas() {
+  var texto = document.getElementById("filtroTexto").value.trim().toLowerCase();
+  var perfil = document.getElementById("filtroPerfil").value;
+
+  var filtradas = allRespostas.filter(function(r) {
+    var pessoa = findPessoaById(r.pessoa_id);
+    var nome = pessoa ? pessoa.nome.toLowerCase() : "";
+    var email = pessoa ? pessoa.email.toLowerCase() : "";
+    var matchTexto = !texto || nome.includes(texto) || email.includes(texto);
+    var matchPerfil = !perfil || r.perfil === perfil;
+    return matchTexto && matchPerfil;
+  });
+
+  renderRespostas(filtradas);
+}
+
+function renderRespostas(lista) {
+  if (lista === undefined) { lista = allRespostas; }
   var body = document.getElementById("respostasBody");
-  if (allRespostas.length === 0) {
-    body.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhuma resposta recebida ainda.</td></tr>';
+  if (lista.length === 0) {
+    body.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhuma resposta encontrada.</td></tr>';
     return;
   }
   var html = "";
-  for (var i = 0; i < allRespostas.length; i++) {
-    var r = allRespostas[i];
+  for (var i = 0; i < lista.length; i++) {
+    var r = lista[i];
     var pessoa = findPessoaById(r.pessoa_id);
     var nome = pessoa ? pessoa.nome : "(pessoa removida)";
     var email = pessoa ? pessoa.email : "-";
