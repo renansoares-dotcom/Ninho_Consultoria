@@ -611,8 +611,12 @@ function abrirModal(respostaId) {
   var answersHtml = "";
   for (var j = 0; j < PERGUNTAS.length; j++) {
     var scoreColor = scores[j] === 4 ? "#3DDC97" : scores[j] === 3 ? "#5B8DEF" : scores[j] === 2 ? "#E8954A" : "#D9534F";
+    var opcaoTexto = getOpcaoTexto(j, scores[j]);
     answersHtml += '<div class="answer-row">';
-    answersHtml += '<span class="q-txt">' + PERGUNTAS[j] + '</span>';
+    answersHtml += '<div class="q-txt">';
+    answersHtml += '<div style="margin-bottom:4px;color:#EDEEF0;">' + PERGUNTAS[j] + '</div>';
+    answersHtml += '<div style="font-size:0.8rem;color:' + scoreColor + '">' + escapeHtml(opcaoTexto) + '</div>';
+    answersHtml += '</div>';
     answersHtml += '<span class="q-score" style="color:' + scoreColor + '">' + scores[j] + '/4</span>';
     answersHtml += '</div>';
   }
