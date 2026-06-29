@@ -214,6 +214,15 @@
     font-size: 0.88rem;
     font-family: inherit;
   }
+  .btn-delete {
+    background: transparent;
+    border: 1px solid rgba(217,83,79,0.3);
+    color: #D9534F;
+    padding: 5px 10px;
+    font-size: 0.78rem;
+    border-radius: 6px;
+  }
+  .btn-delete:hover { background: rgba(217,83,79,0.1); }
 
   /* Modal */
   .modal-backdrop {
@@ -352,10 +361,11 @@
               <th>E-mail</th>
               <th>Pontuacao</th>
               <th>Perfil</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="respostasBody">
-            <tr><td colspan="5" class="empty-state">Carregando...</td></tr>
+            <tr><td colspan="6" class="empty-state">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -602,11 +612,26 @@ function filtrarRespostas() {
   renderRespostas(filtradas);
 }
 
+function apagarResposta(respostaId) {
+  if (!confirm("Apagar esta resposta? Esta acao nao pode ser desfeita.")) { return; }
+
+  sbClient.from("respostas").delete().eq("id", respostaId).then(function(result) {
+    if (result.error) {
+      alert("Erro ao apagar: " + result.error.message);
+      return;
+    }
+    // remove da lista local e atualiza a tela
+    allRespostas = allRespostas.filter(function(r) { return r.id !== respostaId; });
+    renderPessoas(); // atualiza contagem na aba pessoas
+    filtrarRespostas(); // reaplica filtros ativos
+  });
+}
+
 function renderRespostas(lista) {
   if (lista === undefined) { lista = allRespostas; }
   var body = document.getElementById("respostasBody");
   if (lista.length === 0) {
-    body.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhuma resposta encontrada.</td></tr>';
+    body.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma resposta encontrada.</td></tr>';
     return;
   }
   var html = "";
@@ -621,6 +646,7 @@ function renderRespostas(lista) {
     html += "<td>" + escapeHtml(email) + "</td>";
     html += '<td class="score-mono">' + r.pontuacao + "/28</td>";
     html += '<td><span class="badge ' + perfilClass(r.perfil) + '">' + escapeHtml(r.perfil) + "</span></td>";
+    html += '<td><button class="btn-delete" onclick="event.stopPropagation();apagarResposta(\'' + r.id + '\')">Apagar</button></td>';
     html += "</tr>";
   }
   body.innerHTML = html;
