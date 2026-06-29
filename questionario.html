@@ -199,6 +199,94 @@
     margin-top: 30px;
     font-family: 'IBM Plex Mono', monospace;
   }
+
+  /* Relatorio de perfil */
+  .relatorio {
+    width: 100%;
+    margin-top: 8px;
+  }
+  .relatorio-header {
+    margin-bottom: 28px;
+  }
+  .relatorio-header .check-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(61,220,151,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .relatorio-header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(1.4rem, 4vw, 1.9rem);
+    margin-bottom: 6px;
+  }
+  .relatorio-header .sub {
+    color: #9499A6;
+    font-size: 0.95rem;
+    margin-bottom: 0;
+  }
+
+  .perfil-card {
+    border: 1px solid #2C303A;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .perfil-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    padding: 18px 20px;
+    border-bottom: 1px solid #2C303A;
+    transition: background 0.15s;
+  }
+  .perfil-row:last-child { border-bottom: none; }
+  .perfil-row.destaque {
+    background: #1B1E26;
+    border-left: 3px solid currentColor;
+  }
+  .perfil-nome {
+    flex: 0 0 200px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #EDEEF0;
+    padding-right: 16px;
+    padding-top: 2px;
+  }
+  .perfil-desc {
+    flex: 1;
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+  .perfil-row.critica .perfil-desc { color: #D9534F; }
+  .perfil-row.incendio .perfil-desc { color: #E8954A; }
+  .perfil-row.desenvolvimento .perfil-desc { color: #F0C040; }
+  .perfil-row.solida .perfil-desc { color: #3DDC97; }
+
+  .contato-box {
+    border: 1px solid #2C303A;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .contato-box p {
+    color: #9499A6;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+  }
+  .contato-box .contato-info {
+    color: #EDEEF0;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  @media (max-width: 520px) {
+    .perfil-row { flex-direction: column; gap: 6px; }
+    .perfil-nome { flex: none; }
+  }
 </style>
 </head>
 <body>
@@ -233,14 +321,50 @@
 
   <div id="quiz-questions"></div>
 
-  <section class="screen final" id="screen-done">
-    <div class="final-icon">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M4 12.5L9 17.5L20 6.5" stroke="#3DDC97" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+  <section class="screen" id="screen-done">
+    <div class="relatorio" id="relatorio">
+
+      <div class="relatorio-header">
+        <div class="check-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M4 12.5L9 17.5L20 6.5" stroke="#3DDC97" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="eyebrow">Seu resultado</div>
+        <h1 id="relatorioTitulo">Diagnostico concluido</h1>
+        <p class="sub" id="relatorioSub">Veja abaixo seu perfil e o que ele significa para o seu negocio.</p>
+      </div>
+
+      <div class="perfil-card">
+
+        <div class="perfil-row critica" id="row-critica">
+          <div class="perfil-nome">O GESTOR NO ESCURO</div>
+          <div class="perfil-desc">CRITICA — risco de descapitalizacao e falencia silenciosa.</div>
+        </div>
+
+        <div class="perfil-row incendio" id="row-incendio">
+          <div class="perfil-nome">O FATURADOR SEM MARGEM</div>
+          <div class="perfil-desc">ALTA — o negocio esta crescendo para o prejuizo sem perceber.</div>
+        </div>
+
+        <div class="perfil-row desenvolvimento" id="row-desenvolvimento">
+          <div class="perfil-nome">O GESTOR EM TRANSICAO</div>
+          <div class="perfil-desc">MODERADA-ALTA — o negocio tem potencial travado por ausencia de estrutura analitica.</div>
+        </div>
+
+        <div class="perfil-row solida" id="row-solida">
+          <div class="perfil-nome">O GESTOR ESTRATEGICO</div>
+          <div class="perfil-desc">BAIXA-MODERADA — o risco e de estagnacao, nao de colapso. Oportunidade de alavancagem.</div>
+        </div>
+
+      </div>
+
+      <div class="contato-box">
+        <p>Para mais informacoes entre em contato</p>
+        <div class="contato-info" id="contatoInfo">CONTATO_PLACEHOLDER</div>
+      </div>
+
     </div>
-    <h1>Diagnostico recebido.</h1>
-    <p class="sub">Em breve entraremos em contato com os detalhes do seu perfil financeiro.</p>
   </section>
 
   <div class="foot">NINHO CONSULTORIA</div>
@@ -383,8 +507,38 @@ function finishQuiz() {
       errBox.style.display = "block";
       return;
     }
+    mostrarRelatorio(profile, currentPerson.nome);
     goToScreen("done", QUIZ_DATA.length + 1);
   });
+}
+
+function mostrarRelatorio(perfil, nome) {
+  // Atualiza titulo com nome da pessoa
+  var firstName = nome ? nome.split(" ")[0] : "";
+  if (firstName) {
+    document.getElementById("relatorioTitulo").textContent = firstName + ", este e o seu perfil";
+  }
+
+  // Mapeia perfil para classe CSS
+  var classeMap = {
+    "Zona Critica": "critica",
+    "Apagando Incendio": "incendio",
+    "Em Desenvolvimento": "desenvolvimento",
+    "Gestao Financeira Solida": "solida"
+  };
+  var classe = classeMap[perfil] || "critica";
+
+  // Destaca a linha do perfil atual
+  var rows = ["critica", "incendio", "desenvolvimento", "solida"];
+  for (var i = 0; i < rows.length; i++) {
+    var row = document.getElementById("row-" + rows[i]);
+    if (rows[i] === classe) {
+      row.classList.add("destaque");
+      row.style.borderLeftColor = getComputedStyle(row.querySelector(".perfil-desc")).color;
+    } else {
+      row.style.opacity = "0.45";
+    }
+  }
 }
 
 function hideTopChrome() {
