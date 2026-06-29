@@ -398,7 +398,6 @@ function showDashboard() {
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("dashboard").style.display = "block";
   loadPessoas();
-  loadRespostas();
 }
 
 function switchTab(tab) {
@@ -469,6 +468,7 @@ function loadPessoas() {
     }
     allPessoas = result.data || [];
     renderPessoas();
+    loadRespostas();
   });
 }
 
